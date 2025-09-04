@@ -1,10 +1,27 @@
-import { useDropzone } from "react-dropzone";
+import { FileRejection, useDropzone } from "react-dropzone";
+import gpxParser from "../utils/gpxParser";
+import { GPXTrack } from "./RunningMap";
 
-const DragAndDrop = () => {
+interface DragAndDropProps {
+  onTracksParsed: (tracks: GPXTrack[]) => void;
+}
+
+const DragAndDrop: React.FC<DragAndDropProps> = ({ onTracksParsed }) => {
   const { acceptedFiles, getRootProps, getInputProps, isDragActive } =
     useDropzone({
       accept: {
-        "application/gpx+xml": [".gpx"], // only accept .gpx files
+        "application/gpx+xml": [".gpx"],
+      },
+      maxFiles: 1,
+      onDrop: async (
+        acceptedFiles: File[],
+        _fileRejections: FileRejection[]
+      ) => {
+        if (acceptedFiles.length === 0) return;
+
+        //just one gpx file at a time
+        const gpx = await gpxParser(acceptedFiles[0]);
+        onTracksParsed(gpx.trk);
       },
     });
 
@@ -15,26 +32,20 @@ const DragAndDrop = () => {
   ));
 
   return (
-    <section className="flex flex-col items-center w-full max-w-md mx-auto mt-10">
-      <div
-        {...getRootProps()}
-        className={`w-full h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer p-6 text-center transition-all bg-[#fafafa]
+    <div
+      {...getRootProps()}
+      className={`flex w-[80%] h-[70%] items-center justify-center border-2 border-dashed rounded-lg cursor-pointer p-6 text-center transition-all bg-[#fafafa]
           ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
-      >
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p className="text-gray-700">Drop the file here...</p>
-        ) : (
-          <p className="text-gray-500">
-            Drag & drop a file here, or click to select
-          </p>
-        )}{" "}
-      </div>
-      <aside className="mt-4 w-full">
-        <h4 className="font-semibold mb-2">Files</h4>
-        <ul className="space-y-1">{files}</ul>
-      </aside>
-    </section>
+    >
+      <input {...getInputProps()} />
+      {isDragActive ? (
+        <p className="text-gray-700">Drop the file here...</p>
+      ) : (
+        <p className="text-gray-500">
+          Drag & drop a file here, or click to select
+        </p>
+      )}
+    </div>
   );
 };
 
